@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/bmaupin/go-epub v1.0.1
 	github.com/disintegration/imaging v1.6.2
-	github.com/thanhpk/randstr v1.0.4
 )
 
 require (
