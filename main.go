@@ -5,44 +5,44 @@ import (
 	"fmt"
 	"github.com/bmaupin/go-epub"
 	"github.com/disintegration/imaging"
+	"image"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
-  "image"
-  "os"
 )
 
 func is_landscape(img image.Image) bool {
-  var max_diff_ratio_in_y_to_x float32 =  1.1
-  bounds := img.Bounds()
-  width := float32(bounds.Max.X - bounds.Min.X)
-  height := float32(bounds.Max.Y - bounds.Min.Y) 
-  height_adjusted := float32(height) * max_diff_ratio_in_y_to_x
+	var max_diff_ratio_in_y_to_x float32 = 1.1
+	bounds := img.Bounds()
+	width := float32(bounds.Max.X - bounds.Min.X)
+	height := float32(bounds.Max.Y - bounds.Min.Y)
+	height_adjusted := float32(height) * max_diff_ratio_in_y_to_x
 
-  return (width > height_adjusted)
+	return (width > height_adjusted)
 }
 
 func convert_to_portrait_mode(image string) (string, bool) {
 	src, err := imaging.Open(image)
-  
+
 	if err != nil {
 		log.Fatalf("failed to open image: %v", err)
 	}
 
-  if is_landscape(src) {
-    portrait_image := imaging.Rotate90(src)
-    tmp, err := os.CreateTemp("", fmt.Sprintf("*-%s", filepath.Base(image)))
-	  if err != nil {
-		  log.Fatalf("failed to create tmp file: %v", err)
-	  }
-    
-    log.Printf("Saving portrait mode version to %s", tmp.Name())
-    err = imaging.Save(portrait_image, tmp.Name())
-	  if err != nil {
-		  log.Fatalf("failed to save image: %v", err)
-	  }
-	  return tmp.Name(), true
-  }
+	if is_landscape(src) {
+		portrait_image := imaging.Rotate90(src)
+		tmp, err := os.CreateTemp("", fmt.Sprintf("*-%s", filepath.Base(image)))
+		if err != nil {
+			log.Fatalf("failed to create tmp file: %v", err)
+		}
+
+		log.Printf("Saving portrait mode version to %s", tmp.Name())
+		err = imaging.Save(portrait_image, tmp.Name())
+		if err != nil {
+			log.Fatalf("failed to save image: %v", err)
+		}
+		return tmp.Name(), true
+	}
 
 	return image, false
 }
@@ -81,22 +81,22 @@ func main() {
 
 	e := epub.NewEpub(*title)
 
-  var rotated bool
-  var image string
+	var rotated bool
+	var image string
 
 	for _, chapter := range chapters {
 
-    if *convert_portrait {
-		  chapter, rotated = convert_to_portrait_mode(chapter)
-    }
+		if *convert_portrait {
+			chapter, rotated = convert_to_portrait_mode(chapter)
+		}
 		image, err = e.AddImage(chapter, "")
 
 		section := fmt.Sprintf("<img src=\"%s\" alt=\"%s\"/>", image, chapter)
 		log.Printf(section)
 		e.AddSection(section, chapter, "", "")
-    if rotated {
-      defer os.Remove(chapter)
-    }
+		if rotated {
+			defer os.Remove(chapter)
+		}
 	}
 
 	err = e.Write(*output)
